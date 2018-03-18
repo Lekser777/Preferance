@@ -10,6 +10,7 @@ public class Turn {
     private Player currentbetmadeby;
     private Player tradewinner;
     boolean existMizer;
+    boolean existPassing;
     private Player[]players;
 
 
@@ -24,6 +25,7 @@ public class Turn {
         currentbetmadeby=null;
         tradewinner=null;
         existMizer=false;
+        existPassing=false;
         this.players=players;
         fullpack.randomhand(cards1,10);
         fullpack.randomhand(cards2,10);
@@ -35,7 +37,6 @@ public class Turn {
         this.cards2=other.cards2;
         this.cards3=other.cards3;
         this.cards4=other.cards4;
-        this.players=new Player[3];
         this.players=new Player[3];
         this.players[0]=new Player(other.players[0]);
         this.players[1]=new Player(other.players[1]);
@@ -118,12 +119,6 @@ public class Turn {
 
     }
 
-    public void maketurn(Player[] player){
-
-
-
-
-    }
     public void trade(){
         System.out.println("-----------------------------------НАЧАЛО ФАЗЫ ТОРГОВ-----------------------------------");
         fillHand(getCards1(),players[0]);
@@ -151,22 +146,47 @@ public class Turn {
     public void order(){
         System.out.println("----------------------------------НАЧАЛО ФАЗЫ ЗАКАЗОВ----------------------------------");
         if(tradewinner.getTradestate().split("/")[0].equals("mizer")){this.existMizer=true;}
-        chooseTen();
-        setCurrentbet(tradewinner.tradeAnalyse());
-        int j=0;
-        for (int i=0;i<players.length;i++){
-            if(players[i].equals(tradewinner)){
-                j=i;
-            }
-        }
-        tradewinner.setOrderstate(getCurrentbet());
-        int decisioncout=0;
-        j=Cards.nextPlayerId(j);
+        if(tradewinner.getTradestate().split("/")[0].equals("pass")){this.existPassing=true;}
 
-        while (decisioncout<2){
-            players[j].orderDecision(getCurrentbet());
-            decisioncout++;
-            j=Cards.nextPlayerId(j);
+        if(existPassing){
+
+            Card[] handwithbuyin=new Card[10];
+            int[]handpower=new int[10];
+            for (int i=0;i<handwithbuyin.length;i++){
+                handwithbuyin[i]=tradewinner.getCards().get(i);
+                }
+            for(int i=0;i<handpower.length;i++){
+                handpower[i]=Cards.cardNumberPower(handwithbuyin[i].getNumber());
+            }
+            Cards.bubblesort(handwithbuyin,handpower,true);
+            List<Card> tencards=new ArrayList<>();
+            for(int i=0;i<tradewinner.getCards().size();i++){
+                tencards.add(handwithbuyin[i]);
+            }
+            tradewinner.setCards(tencards);
+            System.out.println("БУДЕТ РАСПАССОВКА");
+            for (int i = 0; i < players.length; i++) {
+                players[i].setOrderstate("pass");
+            }
+
+        }else {
+            chooseTen();
+            setCurrentbet(tradewinner.tradeAnalyse());
+            int j = 0;
+            for (int i = 0; i < players.length; i++) {
+                if (players[i].equals(tradewinner)) {
+                    j = i;
+                }
+            }
+            tradewinner.setOrderstate(getCurrentbet());
+            int decisioncout = 0;
+            j = Cards.nextPlayerId(j);
+
+            while (decisioncout < 2) {
+                players[j].orderDecision(getCurrentbet());
+                decisioncout++;
+                j = Cards.nextPlayerId(j);
+            }
         }
         System.out.println("----------------------------------КОНЕЦ ФАЗЫ ЗАКАЗОВ-----------------------------------");
     }
@@ -177,52 +197,78 @@ public class Turn {
                 passcount++;
             }
         }
-        if(passcount==2) {
-            if (getCurrentbet().split("/")[0].equals("mizer")) {
-                tradewinner.setBribes(10);
-            } else tradewinner.setBribes(Cards.numberToInt(getCurrentbet().split("/")[0]));
-
-        }else {
-            int i = 1;
-            Card firstcard;
-            Card secondcard;
-            Card thirdcard;
-            players = Cards.changeorder(players, getTradewinner());
-            String highcolor;
-            if (existMizer) {
-                highcolor = "none";
-            } else {
-                highcolor = getCurrentbet().split("/")[1];
-            }
-            while (i < 11) {
-                System.out.println("Ход номер: " + i);
-                firstcard = players[0].putCard();
-                secondcard = players[1].putCard(firstcard, highcolor);
-                thirdcard = players[2].putCard(firstcard, highcolor);
-                System.out.println("Игрок " + players[0].getName() + " кладет карту:" + firstcard.toString());
-                System.out.println("Игрок " + players[1].getName() + " кладет карту:" + secondcard.toString());
-                System.out.println("Игрок " + players[2].getName() + " кладет карту:" + thirdcard.toString());
-                Player winner = whoWins(firstcard, secondcard, thirdcard);
-                winner.setBribes(winner.getBribes() + 1);
-                System.out.println("Выиграл игрок :" + winner.getName());
-                players = Cards.changeorder(players, winner);
-                i++;
-            }
-            int temppoints=0;
-
-            for (i=0;i<players.length;i++){
-                if(players[i].getOrderstate().equals("pass")){
-                    temppoints=players[i].getBribes();
-                    players[i].setBribes(0);
-                }
-            }
-            for (int ii=0;ii<players.length;ii++) {
-                if (players[ii].getOrderstate().equals("vist")) {
-                    players[ii].setBribes(players[ii].getBribes() + temppoints);
-                }
-            }
-
+        wayToPlay(passcount);
+    }
+    private void wayToPlay(int passcount){
+        switch (passcount){
+            case 3: allPassed(); break;
+            case 2: twoPassed(); break;
+            case 1: oneOrNonePassed(); break;
+            case 0: oneOrNonePassed(); break;
         }
+
+    }
+    private void allPassed(){
+        String highcolor = "none";
+        playing(highcolor);
+
+    }
+
+    private void twoPassed(){
+        if (getCurrentbet().split("/")[0].equals("mizer")) {
+            tradewinner.setBribes(10);
+        } else tradewinner.setBribes(Cards.numberToInt(getCurrentbet().split("/")[0]));
+    }
+    private void oneOrNonePassed(){
+        String highcolor;
+        if (existMizer) {
+            highcolor = "none";
+        } else {
+            highcolor = getCurrentbet().split("/")[1];
+            if(highcolor.equals("БК")){highcolor="none";}
+        }
+
+        playing(highcolor);
+
+        int temppoints=0;
+        for (int i=0;i<players.length;i++){
+            if(players[i].getOrderstate().equals("pass")){
+                temppoints=players[i].getBribes();
+                players[i].setBribes(0); }
+        }
+        for (int ii=0;ii<players.length;ii++) {
+            if (players[ii].getOrderstate().equals("vist")) {
+                players[ii].setBribes(players[ii].getBribes() + temppoints);
+            }
+        }
+
+    }
+    private void playing(String highcolor){
+        int i = 1;
+        Card firstcard;
+        Card secondcard;
+        Card thirdcard;
+        Player [] playorder=new Player[3];
+        for(int ind=0;ind<players.length;ind++){
+            playorder[ind]=players[ind];
+        }
+        playorder = Cards.changeorder(playorder, getTradewinner());
+
+        while (i < 11) {
+            System.out.println("Ход номер: " + i);
+            firstcard = playorder[0].putCard();
+            secondcard = playorder[1].putCard(firstcard, highcolor);
+            thirdcard = playorder[2].putCard(firstcard, highcolor);
+            System.out.println("Игрок " + playorder[0].getName() + " кладет карту:" + firstcard.toString());
+            System.out.println("Игрок " + playorder[1].getName() + " кладет карту:" + secondcard.toString());
+            System.out.println("Игрок " + playorder[2].getName() + " кладет карту:" + thirdcard.toString());
+            Player winner = whoWins(firstcard, secondcard, thirdcard,playorder);
+            winner.setBribes(winner.getBribes() + 1);
+            System.out.println("Выиграл игрок :" + winner.getName());
+            playorder = Cards.changeorder(playorder, winner);
+            i++;
+        }
+
     }
 
     private void chooseTen(){
@@ -235,15 +281,8 @@ public class Turn {
             if(i<10){handwithbuyin[i]=tradewinner.getCards().get(i);}
             else{handwithbuyin[i]=cards4[j];j++;}
         }
-
-
         for(int i=0;i<handpower.length;i++){
-
-            if(handwithbuyin[i].getColor().equals(tradewinner.getTradestate().split("/")[1])&&!this.existMizer){
-                handpower[i]=Cards.cardNumberPower(handwithbuyin[i].getNumber())*2;
-            }
             handpower[i]=Cards.cardNumberPower(handwithbuyin[i].getNumber());
-
         }
 
         if(this.existMizer){Cards.bubblesort(handwithbuyin,handpower,true);}
@@ -267,25 +306,25 @@ public class Turn {
         }
         player.setCards(temp);
     }
-    public Player whoWins(Card card1,Card card2,Card card3){
+    public Player whoWins(Card card1,Card card2,Card card3,Player[]currentplayers){
         String highcolor=tradewinner.getOrderstate().split("/")[1];
-        if(existMizer){highcolor="none";}
+        if(existMizer||existPassing){highcolor="none";}
         if(!highcolor.equals("none")) {
             if (Cards.cardIsBetter(card1, card2, highcolor) && Cards.cardIsBetter(card1, card3, highcolor)) {
-                return players[0];
+                return currentplayers[0];
             } else if (Cards.cardIsBetter(card2, card1, highcolor) && Cards.cardIsBetter(card2, card3, highcolor)) {
-                return players[1];
+                return currentplayers[1];
             } else {
-                return players[2];
+                return currentplayers[2];
             }
         }else {
 
             if (Cards.cardIsBetter(card1, card2,card1) && Cards.cardIsBetter(card1, card3,card1)) {
-                return players[0];
+                return currentplayers[0];
             } else if (Cards.cardIsBetter(card2, card1,card1) && Cards.cardIsBetter(card2, card3,card1)) {
-                return players[1];
+                return currentplayers[1];
             } else {
-                return players[2];
+                return currentplayers[2];
             }
 
         }

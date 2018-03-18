@@ -165,9 +165,13 @@ public class Player {
         }
 
         int calcnumber=calcNumberOfBet(colorspower);
-        if (calcnumber<6){
-            result="mizer/Ч";
+
+        if (calcnumber<3){
+            result="mizer/БК";
             System.out.println("Игрок "+name+" решил: mizer");
+        }else if (calcnumber<6){
+            result="pass/БК";
+            System.out.println("Игрок "+name+" решил: pass");
         }else {
             if(max<3) {
                 result=calcnumber + "/"+"БК";
@@ -196,7 +200,6 @@ public class Player {
             System.out.println("Игрок "+name+" повышает ставку "+currentbet+" до "+mybet);
             currentbet=mybet;setTradestate(mybet);
         } else if(Cards.isMore(currentbet,mybet)){
-            //if isagressive currentbet++
             System.out.println("Игрок "+name+" пассует ");
             setTradestate("pass");
         } else if(currentbet.equals(mybet)){
@@ -252,7 +255,6 @@ public class Player {
         sortCards();
         Card cardtoremove=getCards().get(0);
         getCards().remove(0);
-
         return cardtoremove;
     }
     public Card putCard(Card firstcard,String highcolor){

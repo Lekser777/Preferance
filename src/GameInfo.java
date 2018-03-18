@@ -44,15 +44,8 @@ public class GameInfo {
         turn.fillHand(turn.getCards2(),turn.getPlayers()[1]);
         turn.fillHand(turn.getCards3(),turn.getPlayers()[2]);
         */
-        System.out.println("!!!!!!!!!!!!!!! "+turn.getPlayers()[0].getOrderstate()+" " +turn.getPlayers()[0].getName());
-
-        System.out.println("!!!!!!!!!!!!!!! "+turn.getPlayers()[1].getOrderstate()+" " +turn.getPlayers()[1].getName());
-
-        System.out.println("!!!!!!!!!!!!!!! "+turn.getPlayers()[2].getOrderstate()+" " +turn.getPlayers()[2].getName());
-
-        System.out.println("!!!!!!!!!!!!!!! "+turn.getTradewinner().getOrderstate()+" " +turn.getTradewinner().getName());
-
-        System.out.println("!!!!!!!!!!!!!!! "+turn.isExistMizer());
+        turn.trade();
+        turn.order();
         turn.play();
     }
     //API5

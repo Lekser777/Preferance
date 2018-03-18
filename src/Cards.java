@@ -39,8 +39,9 @@ public class Cards {
         return result;
     }
     static public int numberToInt(String number){
-        if(number.equals("mizer")){return 8;}
-        else return Integer.parseInt(number);
+        if(number.equals("mizer")){ return 8;
+        }else if (number.equals("pass")){return 0;
+        }else return Integer.parseInt(number);
     }
     static public void bubblesort(Card[]handwithbuyin,int[]handpower,boolean isdowncast) {
         for (int i = handpower.length - 1; i > 0; i--) {

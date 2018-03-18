@@ -19,13 +19,11 @@ public class Game {
         this.loging=new GameInfo(this);
     }
 
-    public void setPlayers(Player[] players) {
-        this.players = players;
-    }
     public void fullgame(int countturns){
         Turn thisturn = new Turn(this.players);
         int turns=0;
         while (turns<countturns) {
+            System.out.println("Первый игрок "+players[0].getName());
             System.out.println("------------------------------------------------------------");
             System.out.println("---------------------РАЗДАЧА №"+(turns+1)+"----------------------------");
             Turn turntosave = new Turn(thisturn);
@@ -52,8 +50,10 @@ public class Game {
             for(int i=0;i<thisturn.getPlayers().length;i++){
                 thisturn.getPlayers()[i].setBribes(0);
             }
+            players=Cards.changeorder(this.players,players[1]);
             thisturn=new Turn(this.players);
             turns++;
+
         }
         this.calcPull(thisturn);
     }
@@ -71,46 +71,71 @@ public class Game {
                 vistsum=vistsum+turnplayers[i].getBribes();
             }
         }
-        players=Cards.changeorder(players,turn.getTradewinner());
         for (int i=0;i<turnplayers.length;i++){
+            //Подсчет для выигравшего
             if(players[i].equals(turn.getTradewinner())){
-                if(betneeded==11) {
-                    if (players[i].getBribes() > 0) {
-                        players[i].setHill(players[i].getHill() + players[i].getBribes() * kpull * rules.getKWinnerHill());
-                    } if(players[i].getBribes()==0) {
-                        players[i].setPull(players[i].getPull()+kpull);
-                        players[i].mizerswins++;
-                    }
-                }else if(betneeded>players[i].getBribes()){
-                    players[i].setHill(players[i].getHill()+(betneeded-players[i].getBribes())*kpull*rules.getKWinnerHill());
-                    cons=kpull*rules.getKVist()*(betneeded-players[i].getBribes());
-                } else {
-                    players[i].setPull(players[i].getPull()+kpull);
-                    players[i].turnswins++;
+                //Подсчет расспаса
+                if(betneeded==12){
+                    calcPass(i);
                 }
+                //Подсчет для выигравшего фазу торгов при мизере
+                if(betneeded==11) {
+                    calcMizer(i);
+                //Подсчет для выигравшего фазу торгов при обычной игре
+                }else cons=calcNormWinner(i,betneeded);
+
+            //Подсчет для остальных при обычной игре
             }else if(players[i].getOrderstate().equals("vist")){
                 if(!(betneeded==11)){
-                    if(betneededvist>vistsum){
-                        players[i].setHill(players[i].getHill()+((betneededvist-vistsum)*kpull*rules.getKVisterHill())/2);
-                    }
-                    System.out.println(" консоляция "+cons);
-                    turn.whomToAdd(players[i].getBribes()*kpull*rules.getKVist(),players[i]);
-                    turn.whomToAdd(cons,players[i]);
-
-
+                    calcNorm(i,betneededvist,vistsum,turn,cons);
                 }
-
-
+            //Подсчет расспаса
+            }else if(players[i].getOrderstate().equals("pass")&&turn.existPassing){
+                calcPass(i);
             }
 
-        }
-
-        for(int i=0;i<players.length;i++){
-            System.out.println(players[i].getName()+" "+players[i].getBribes());
         }
         System.out.println("----------------------------------ПОДСЧЕТ-----------------------------------");
         viewResults(turnplayers);
     }
+    private void calcPass(int i){
+        if (players[i].getBribes() > 0) {
+            players[i].setHill(players[i].getHill() + players[i].getBribes() * 2);
+        }
+        if(players[i].getBribes()==0) {
+            players[i].setPull(players[i].getPull()+2);
+            players[i].passeswins++;
+        }
+
+    }
+    private void calcMizer(int i){
+        if (players[i].getBribes() > 0) {
+            players[i].setHill(players[i].getHill() + players[i].getBribes() * kpull * rules.getKWinnerHill());
+        } if(players[i].getBribes()==0) {
+            players[i].setPull(players[i].getPull()+kpull);
+            players[i].mizerswins++;
+        }
+    }
+    private int calcNormWinner(int i,int betneeded){
+        int cons=0;
+        if(betneeded>players[i].getBribes()){
+            players[i].setHill(players[i].getHill()+(betneeded-players[i].getBribes())*kpull*rules.getKWinnerHill());
+            cons=kpull*rules.getKVist()*(betneeded-players[i].getBribes());
+        } else {
+            players[i].setPull(players[i].getPull()+kpull);
+            players[i].turnswins++;
+        }
+        return cons;
+
+    }
+    private void calcNorm(int i,int betneededvist,int vistsum, Turn turn,int cons){
+            if(betneededvist>vistsum){
+                players[i].setHill(players[i].getHill()+((betneededvist-vistsum)*kpull*rules.getKVisterHill())/2);
+            }
+            turn.whomToAdd(players[i].getBribes()*kpull*rules.getKVist(),players[i]);
+            turn.whomToAdd(cons,players[i]);
+    }
+
     public void calcKPull(String bet){
         bet=bet.split("/")[0];
         switch (bet){
@@ -127,7 +152,9 @@ public class Game {
         bet=bet.split("/")[0];
         if(bet.equals("mizer")){
             return 11;
-        }else { return Cards.numberToInt(bet);}
+        }else if(bet.equals("pass")){
+            return 12;
+        }else{ return Cards.numberToInt(bet);}
     }
     public int calcBridesNeededVist(String bet){
         bet=bet.split("/")[0];
